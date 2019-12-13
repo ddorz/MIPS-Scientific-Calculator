@@ -1,0 +1,209 @@
+# Dave Dorzback
+ 
+.data
+
+prompt: .asciiz "Enter x: "
+result_s: .asciiz "sin(x) is "
+result_c: .asciiz "\ncos(x) is "
+result_t: .asciiz "\ntan(x) is "
+
+.text
+
+main:
+
+#Prompt for float value
+li $v0, 4
+la $a0, prompt
+syscall
+
+#Read float value
+li $v0, 6
+syscall
+mov.s $f12, $f0
+mov.s $f1, $f0
+
+#Call function
+jal sine
+mov.s $f2, $f0
+
+#Print result
+li $v0, 4
+la $a0, result_s
+syscall
+
+#Print sin(x)
+li $v0, 2
+mov.s $f12, $f0
+syscall
+
+#Call function
+mov.s $f12, $f1
+jal cosine
+#mov.s $f11, $f0
+#div.s $f2, $f2, $f11
+
+#Print result
+li $v0, 4
+la $a0, result_c
+syscall
+
+#Print cos(x)
+li $v0, 2
+mov.s $f12, $f0
+syscall
+
+mov.s $f12, $f1
+jal tan
+#Print result_t
+li $v0, 4
+la $a0, result_t
+syscall
+
+
+#Print tan(x)
+li $v0, 2
+mov.s $f12, $f0
+syscall
+
+
+#System code to exit
+li $v0, 10
+syscall
+
+#Procedure
+sine:
+
+#Initialize registers
+li $t1, 20
+
+#Store x
+mov.s $f4, $f12	#x
+mov.s $f9, $f12	#t
+mov.s $f10, $f12	#sum
+
+#Counter
+li $t0, 1
+
+#Loop
+loop_s:
+
+#Check condition
+bge $t0, $t1, ExitLoop
+
+#Move value
+mov.s $f4, $f12
+#mov.d $f10, $f12
+
+# convert -1 to float
+li $t5, -1
+mtc1 $t5, $f5
+cvt.s.w $f5, $f5
+
+#$f4 square
+mul.s $f8, $f4, $f4
+mul.s $f8, $f8, $f5
+
+# multiply  $t0 by 2
+sll $t2, $t0, 1
+addi $t3, $t2, 1
+mul $t4, $t2, $t3
+
+#convert it to float
+mtc1 $t4, $f7
+cvt.s.w $f7, $f7
+
+#update $f4
+mul.s $f9, $f9, $f8
+div.s $f9, $f9, $f7
+add.s $f10, $f10, $f9
+
+addi $t0, $t0, 1
+
+#Move to loop start
+j loop_s
+
+#Procedure
+cosine:
+
+#Initialize registers
+li $t1, 20
+
+#Store x
+mov.s $f4, $f12	#x
+li $t2, 1
+mtc1 $t2, $f9
+cvt.s.w $f9, $f9 #t
+mtc1 $t2, $f10
+cvt.s.w $f10, $f10 #sum
+
+#Counter
+li $t0, 1
+
+#Loop
+loop_c:
+
+#Check condition
+bge $t0, $t1, ExitLoop
+
+#Move value
+mov.s $f4, $f12
+#mov.d $f10, $f12
+
+# convert -1 to float
+li $t5, -1
+mtc1 $t5, $f5
+cvt.s.w $f5, $f5
+
+#$f4 square
+mul.s $f8, $f4, $f4
+mul.s $f8, $f8, $f5
+
+# multiply  $t0 by 2
+sll $t2, $t0, 1
+addi $t3, $t2, -1
+mul $t4, $t2, $t3
+
+#convert it to float
+mtc1 $t4, $f7
+cvt.s.w $f7, $f7
+
+#update $f4
+mul.s $f9, $f9, $f8
+div.s $f9, $f9, $f7
+add.s $f10, $f10, $f9
+
+addi $t0, $t0, 1
+
+#Move to loop start
+j loop_c
+
+tan:
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal sine	#call function sine
+mov.s $f1, $f0	#store sine in $f1
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+	
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal cosine	#call function cosine
+mov.s $f2, $f0	#store cosine in $f2
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+
+div.s $f10, $f1, $f2	#tan = sin/cos
+j ExitLoop
+
+#Exit loop
+ExitLoop:
+
+#Pass value
+mov.s $f0, $f10
+
+#Jump to main
+jr $ra

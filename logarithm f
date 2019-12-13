@@ -1,0 +1,171 @@
+# Dave Dorzback
+
+.data
+
+prompt: .asciiz "Enter x: "
+result_2: .asciiz "\nlog2(x) is "
+result_10: .asciiz "\nlog10(x) is "
+
+.text
+
+main:
+
+#Prompt for float value
+li $v0, 4
+la $a0, prompt
+syscall
+
+#Read float value
+li $v0, 6
+syscall
+mov.s $f12, $f0
+mov.s $f3, $f0
+
+#Call function
+jal log2
+
+#Print result
+li $v0, 4
+la $a0, result_2
+syscall
+
+#Print log2(x)
+li $v0, 2
+mov.s $f12, $f0
+syscall
+
+
+mov.s $f12, $f3
+#Call function
+jal log10
+
+#Print result
+li $v0, 4
+la $a0, result_10
+syscall
+
+#Print log10(x)
+li $v0, 2
+mov.s $f12, $f0
+syscall
+
+
+#System code to exit
+li $v0, 10
+syscall
+
+#Procedure
+lnx:
+
+#Initialize registers
+li $t1, 1000
+
+# convert 1 to float
+li $t5, 1
+mtc1 $t5, $f5
+cvt.s.w $f5, $f5
+
+#Store x
+mov.s $f4, $f12	#x
+sub.s $f4, $f4, $f5
+add.s $f6, $f12, $f5
+div.s $f4, $f4, $f6	#t = (x-1)/(x+1)
+
+mul.s $f9, $f4, $f4 #n = t*t
+
+mov.s $f10, $f4	#sum = t
+
+
+#Counter
+li $t0, 3
+
+#Loop
+loop:
+
+#Check condition
+bge $t0, $t1, ExitLoop
+
+
+# t = t * n
+mul.s $f4, $f4, $f9
+
+# convert $t0 to float
+mtc1 $t0, $f7
+cvt.s.w $f7, $f7
+
+#update sum ($f10)
+div.s $f6, $f4, $f7	#t/i
+add.s $f10, $f10, $f6
+
+addi $t0, $t0, 2
+
+
+#Move to loop start
+j loop
+
+#Exit loop
+ExitLoop:
+
+#Pass value
+add.s $f10, $f10, $f10
+mov.s $f0, $f10
+
+#Jump to main
+jr $ra
+
+
+log2:
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal lnx		#call function ln (x)
+mov.s $f1, $f0	#store ln(x) in $f1
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+
+# convert 2 to float
+li $t5, 2		
+mtc1 $t5, $f12
+cvt.s.w $f12, $f12	
+
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal lnx		#call function to calculate ln(2)
+mov.s $f2, $f0	#store ln(2) in $f2
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+
+div.s $f0, $f1, $f2	#log2(x) = ln(x)/ln(2)
+jr $ra
+
+log10:
+
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal lnx		#call function ln (x)
+mov.s $f1, $f0	#store ln(x) in $f1
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+
+# convert 2 to float
+li $t5, 10		
+mtc1 $t5, $f12
+cvt.s.w $f12, $f12	
+
+addi $sp, $sp, -4
+sw $ra, 0($sp)
+
+jal lnx		#call function to calculate ln(2)
+mov.s $f2, $f0	#store ln(10) in $f2
+
+lw $ra, 0($sp)
+addi $sp, $sp, 4
+
+div.s $f0, $f1, $f2	#log10(x) = ln(x)/ln(10)
+jr $ra
+

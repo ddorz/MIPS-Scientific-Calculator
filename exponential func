@@ -1,0 +1,85 @@
+# Dave Dorzback
+
+# using the power series expansion to calculate f(x) = e^x
+.data
+	prompt: .asciiz "Enter x: "	
+	result: .asciiz "e^x = "
+.text
+	#Prompt for float value
+	li $v0, 4
+	la $a0, prompt
+	syscall
+
+	#Read float value
+	li $v0, 6
+	syscall
+	
+	#load the input in $f12
+	mov.s $f12, $f0
+
+	#Call function
+	jal exp
+
+	#Print result
+	li $v0, 4
+	la $a0, result
+	syscall
+
+	#Print e^x
+	li $v0, 2
+	mov.s $f12, $f0
+	syscall
+
+	#System code to exit
+	li $v0, 10
+	syscall
+
+#Procedure
+exp:
+
+#Initialize registers
+li $t1, 30
+
+# convert 1 to float
+li $t5, 1
+mtc1 $t5, $f5
+cvt.s.w $f5, $f5
+
+#Store x
+mov.s $f4, $f12	# x
+mov.s $f9, $f5 # t = 1
+mov.s $f10, $f5	# sum = 1
+
+
+#Counter
+li $t0, 1
+
+#Loop
+loop:
+
+#Check condition
+bge $t0, $t1, ExitLoop
+
+# convert $t0 to float
+mtc1 $t0, $f7
+cvt.s.w $f7, $f7
+
+#update sum ($f10)
+div.s $f6, $f4, $f7	# x/i
+mul.s $f9, $f9, $f6	# t = t (x/i)
+add.s $f10, $f10, $f9
+
+addi $t0, $t0, 1
+
+
+#Move to loop start
+j loop
+
+#Exit loop
+ExitLoop:
+
+#Pass value
+mov.s $f0, $f10
+
+#Jump to main
+jr $ra
